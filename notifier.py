@@ -31,13 +31,13 @@ class TelegramNotifier:
         except Exception as e:
             logger.warning("Telegram notification failed: %s", e)
 
-    def on_buy(self, symbol: str, price: float, amount: float, sl: float, tp: float) -> None:
+    def on_buy(self, symbol: str, price: float, amount: float, sl: float, tp: float, currency: str = "USDT") -> None:
         self._send(
             f"🟢 <b>BUY</b> {symbol}\n"
-            f"Price : <code>{price:.4f}</code>\n"
+            f"Price : <code>{price:.2f} {currency}</code>\n"
             f"Amount: <code>{amount:.6f}</code>\n"
-            f"SL    : <code>{sl:.4f}</code>\n"
-            f"TP    : <code>{tp:.4f}</code>"
+            f"SL    : <code>{sl:.2f} {currency}</code>\n"
+            f"TP    : <code>{tp:.2f} {currency}</code>"
         )
 
     def on_sell(self, symbol: str, price: float, pnl_pct: float, reason: str) -> None:

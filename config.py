@@ -3,11 +3,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SUPPORTED_EXCHANGES = ("binance", "gateio")
+SUPPORTED_EXCHANGES = ("binance", "gateio", "upbit")
 
 
 class Config:
-    # Exchange selection: "binance" or "gateio"
+    # Exchange selection: "binance", "gateio", or "upbit"
     EXCHANGE: str = os.getenv("EXCHANGE", "binance").lower()
 
     # Binance API
@@ -18,12 +18,17 @@ class Config:
     GATEIO_API_KEY: str = os.getenv("GATEIO_API_KEY", "")
     GATEIO_SECRET_KEY: str = os.getenv("GATEIO_SECRET_KEY", "")
 
+    # Upbit API (no testnet support — always live)
+    # Get your keys from: https://upbit.com/mypage/open_api_management
+    UPBIT_API_KEY: str = os.getenv("UPBIT_API_KEY", "")
+    UPBIT_SECRET_KEY: str = os.getenv("UPBIT_SECRET_KEY", "")
+
     USE_TESTNET: bool = os.getenv("USE_TESTNET", "true").lower() == "true"
 
     # Trading pair and timeframe
     SYMBOL: str = os.getenv("SYMBOL", "BTC/USDT")
     TIMEFRAME: str = os.getenv("TIMEFRAME", "1h")
-    TRADE_AMOUNT_USDT: float = float(os.getenv("TRADE_AMOUNT_USDT", "100"))
+    TRADE_AMOUNT: float = float(os.getenv("TRADE_AMOUNT", "100"))
 
     # EMA periods
     EMA_SHORT: int = int(os.getenv("EMA_SHORT", "9"))
@@ -41,12 +46,25 @@ class Config:
     TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
 
     @property
+    def TRADE_CURRENCY(self) -> str:
+        """Base currency used for balance and order sizing."""
+        return "KRW" if self.EXCHANGE == "upbit" else "USDT"
+
+    @property
     def API_KEY(self) -> str:
-        return self.BINANCE_API_KEY if self.EXCHANGE == "binance" else self.GATEIO_API_KEY
+        if self.EXCHANGE == "binance":
+            return self.BINANCE_API_KEY
+        if self.EXCHANGE == "gateio":
+            return self.GATEIO_API_KEY
+        return self.UPBIT_API_KEY
 
     @property
     def SECRET_KEY(self) -> str:
-        return self.BINANCE_SECRET_KEY if self.EXCHANGE == "binance" else self.GATEIO_SECRET_KEY
+        if self.EXCHANGE == "binance":
+            return self.BINANCE_SECRET_KEY
+        if self.EXCHANGE == "gateio":
+            return self.GATEIO_SECRET_KEY
+        return self.UPBIT_SECRET_KEY
 
     def validate(self) -> None:
         if self.EXCHANGE not in SUPPORTED_EXCHANGES:

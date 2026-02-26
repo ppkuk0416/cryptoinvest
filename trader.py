@@ -9,8 +9,8 @@ from notifier import TelegramNotifier
 
 logger = logging.getLogger(__name__)
 
-# Gate.io does not support set_sandbox_mode(); testnet is noted in logs only.
-_TESTNET_UNSUPPORTED = {"gateio"}
+# These exchanges do not support set_sandbox_mode(); testnet is noted in logs only.
+_TESTNET_UNSUPPORTED = {"gateio", "upbit"}
 
 
 class Trader:
@@ -70,19 +70,20 @@ class Trader:
 
     def open_long(self, price: float) -> Optional[dict]:
         """Place a market buy order."""
-        usdt_balance = self.get_balance("USDT")
-        amount_usdt = min(self.config.TRADE_AMOUNT_USDT, usdt_balance)
-        if amount_usdt <= 0:
-            logger.warning("Insufficient USDT balance to open position")
+        currency = self.config.TRADE_CURRENCY
+        balance = self.get_balance(currency)
+        amount_base = min(self.config.TRADE_AMOUNT, balance)
+        if amount_base <= 0:
+            logger.warning("Insufficient %s balance to open position", currency)
             return None
 
-        amount_coin = amount_usdt / price
+        amount_coin = amount_base / price
         order = self.exchange.create_market_buy_order(
             self.config.SYMBOL, amount_coin
         )
         logger.info(
-            "BUY  %s | qty=%.6f | price=%.2f | cost=%.2f USDT",
-            self.config.SYMBOL, amount_coin, price, amount_usdt,
+            "BUY  %s | qty=%.6f | price=%.2f | cost=%.2f %s",
+            self.config.SYMBOL, amount_coin, price, amount_base, currency,
         )
         sl = price * (1 - self.config.STOP_LOSS_PCT / 100)
         tp = price * (1 + self.config.TAKE_PROFIT_PCT / 100)
@@ -93,7 +94,7 @@ class Trader:
             "stop_loss": sl,
             "take_profit": tp,
         }
-        self.notifier.on_buy(self.config.SYMBOL, price, amount_coin, sl, tp)
+        self.notifier.on_buy(self.config.SYMBOL, price, amount_coin, sl, tp, self.config.TRADE_CURRENCY)
         return order
 
     def close_long(self, price: float, reason: str = "signal") -> Optional[dict]:
