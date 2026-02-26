@@ -13,14 +13,7 @@ Exit (SELL):
 """
 
 from enum import Enum
-from typing import Optional
 import pandas as pd
-
-try:
-    import pandas_ta as ta
-    _HAS_PANDAS_TA = True
-except ImportError:
-    _HAS_PANDAS_TA = False
 
 
 class Signal(Enum):
@@ -34,9 +27,6 @@ def _ema(series: pd.Series, period: int) -> pd.Series:
 
 
 def _rsi(series: pd.Series, period: int = 14) -> pd.Series:
-    if _HAS_PANDAS_TA:
-        return ta.rsi(series, length=period)
-    # Fallback: Wilder's smoothed RSI
     delta = series.diff()
     gain = delta.clip(lower=0).ewm(alpha=1 / period, adjust=False).mean()
     loss = (-delta.clip(upper=0)).ewm(alpha=1 / period, adjust=False).mean()
@@ -46,11 +36,6 @@ def _rsi(series: pd.Series, period: int = 14) -> pd.Series:
 
 def _adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
     """Average Directional Index — measures trend strength (not direction)."""
-    if _HAS_PANDAS_TA:
-        result = ta.adx(high, low, close, length=period)
-        col = f"ADX_{period}"
-        return result[col] if col in result.columns else result.iloc[:, 0]
-    # Fallback: manual ADX
     tr = pd.concat([
         high - low,
         (high - close.shift()).abs(),
