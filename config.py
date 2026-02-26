@@ -48,6 +48,11 @@ class Config:
     VOLUME_MA_PERIOD: int = int(os.getenv("VOLUME_MA_PERIOD", "20"))
     VOLUME_SPIKE_MULT: float = float(os.getenv("VOLUME_SPIKE_MULT", "1.3"))
 
+    # Short selling — requires futures or margin account
+    # Set FUTURES_MODE=true to use exchange futures market (e.g. Binance USDT-M)
+    FUTURES_MODE: bool = os.getenv("FUTURES_MODE", "false").lower() == "true"
+    ENABLE_SHORT: bool = os.getenv("ENABLE_SHORT", "false").lower() == "true"
+
     # Risk management
     STOP_LOSS_PCT: float = float(os.getenv("STOP_LOSS_PCT", "2.0"))
     TAKE_PROFIT_PCT: float = float(os.getenv("TAKE_PROFIT_PCT", "4.0"))
