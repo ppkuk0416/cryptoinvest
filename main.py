@@ -46,6 +46,7 @@ def main():
 
     logger.info("=" * 50)
     logger.info("Crypto Trading Bot started")
+    logger.info("Exchange : %s", config.EXCHANGE)
     logger.info("Symbol   : %s", config.SYMBOL)
     logger.info("Timeframe: %s", config.TIMEFRAME)
     logger.info("EMA      : %d / %d", config.EMA_SHORT, config.EMA_LONG)

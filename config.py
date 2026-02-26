@@ -3,11 +3,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+SUPPORTED_EXCHANGES = ("binance", "gateio")
+
 
 class Config:
+    # Exchange selection: "binance" or "gateio"
+    EXCHANGE: str = os.getenv("EXCHANGE", "binance").lower()
+
     # Binance API
-    API_KEY: str = os.getenv("BINANCE_API_KEY", "")
-    SECRET_KEY: str = os.getenv("BINANCE_SECRET_KEY", "")
+    BINANCE_API_KEY: str = os.getenv("BINANCE_API_KEY", "")
+    BINANCE_SECRET_KEY: str = os.getenv("BINANCE_SECRET_KEY", "")
+
+    # Gate.io API
+    GATEIO_API_KEY: str = os.getenv("GATEIO_API_KEY", "")
+    GATEIO_SECRET_KEY: str = os.getenv("GATEIO_SECRET_KEY", "")
+
     USE_TESTNET: bool = os.getenv("USE_TESTNET", "true").lower() == "true"
 
     # Trading pair and timeframe
@@ -26,10 +36,22 @@ class Config:
     # Polling interval in seconds
     POLL_INTERVAL: int = 60
 
+    @property
+    def API_KEY(self) -> str:
+        return self.BINANCE_API_KEY if self.EXCHANGE == "binance" else self.GATEIO_API_KEY
+
+    @property
+    def SECRET_KEY(self) -> str:
+        return self.BINANCE_SECRET_KEY if self.EXCHANGE == "binance" else self.GATEIO_SECRET_KEY
+
     def validate(self) -> None:
+        if self.EXCHANGE not in SUPPORTED_EXCHANGES:
+            raise ValueError(
+                f"EXCHANGE must be one of {SUPPORTED_EXCHANGES}, got '{self.EXCHANGE}'"
+            )
         if not self.API_KEY or not self.SECRET_KEY:
             raise ValueError(
-                "BINANCE_API_KEY and BINANCE_SECRET_KEY must be set in .env"
+                f"{self.EXCHANGE.upper()} API key and secret must be set in .env"
             )
         if self.EMA_SHORT >= self.EMA_LONG:
             raise ValueError("EMA_SHORT must be less than EMA_LONG")

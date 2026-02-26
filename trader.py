@@ -8,9 +8,12 @@ from strategy import EMAStrategy, Signal
 
 logger = logging.getLogger(__name__)
 
+# Gate.io does not support set_sandbox_mode(); testnet is noted in logs only.
+_TESTNET_UNSUPPORTED = {"gateio"}
+
 
 class Trader:
-    """Handles Binance exchange interactions and order execution."""
+    """Handles exchange interactions and order execution (Binance / Gate.io)."""
 
     def __init__(self, config: Config):
         self.config = config
@@ -21,8 +24,9 @@ class Trader:
         self.exchange = self._init_exchange()
         self.position: Optional[dict] = None  # current open position
 
-    def _init_exchange(self) -> ccxt.binance:
-        exchange = ccxt.binance(
+    def _init_exchange(self) -> ccxt.Exchange:
+        exchange_cls = getattr(ccxt, self.config.EXCHANGE)
+        exchange: ccxt.Exchange = exchange_cls(
             {
                 "apiKey": self.config.API_KEY,
                 "secret": self.config.SECRET_KEY,
@@ -30,14 +34,21 @@ class Trader:
             }
         )
         if self.config.USE_TESTNET:
-            exchange.set_sandbox_mode(True)
-            logger.info("Running in TESTNET mode")
+            if self.config.EXCHANGE in _TESTNET_UNSUPPORTED:
+                logger.warning(
+                    "%s does not support testnet — running against LIVE API. "
+                    "Use a sub-account with limited funds for testing.",
+                    self.config.EXCHANGE,
+                )
+            else:
+                exchange.set_sandbox_mode(True)
+                logger.info("Running in TESTNET mode")
         else:
-            logger.warning("Running in LIVE trading mode")
+            logger.warning("Running in LIVE trading mode on %s", self.config.EXCHANGE)
         return exchange
 
     def fetch_ohlcv(self) -> pd.DataFrame:
-        """Fetch recent OHLCV candles from Binance."""
+        """Fetch recent OHLCV candles from the exchange."""
         limit = self.config.EMA_LONG + 10  # a few extra candles for warm-up
         raw = self.exchange.fetch_ohlcv(
             self.config.SYMBOL, self.config.TIMEFRAME, limit=limit
