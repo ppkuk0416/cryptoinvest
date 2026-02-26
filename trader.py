@@ -5,6 +5,7 @@ import pandas as pd
 
 from config import Config
 from strategy import EMAStrategy, Signal
+from notifier import TelegramNotifier
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,9 @@ class Trader:
         )
         self.exchange = self._init_exchange()
         self.position: Optional[dict] = None  # current open position
+        self.notifier = TelegramNotifier(
+            config.TELEGRAM_BOT_TOKEN, config.TELEGRAM_CHAT_ID
+        )
 
     def _init_exchange(self) -> ccxt.Exchange:
         exchange_cls = getattr(ccxt, self.config.EXCHANGE)
@@ -80,13 +84,16 @@ class Trader:
             "BUY  %s | qty=%.6f | price=%.2f | cost=%.2f USDT",
             self.config.SYMBOL, amount_coin, price, amount_usdt,
         )
+        sl = price * (1 - self.config.STOP_LOSS_PCT / 100)
+        tp = price * (1 + self.config.TAKE_PROFIT_PCT / 100)
         self.position = {
             "side": "long",
             "entry_price": price,
             "amount": amount_coin,
-            "stop_loss": price * (1 - self.config.STOP_LOSS_PCT / 100),
-            "take_profit": price * (1 + self.config.TAKE_PROFIT_PCT / 100),
+            "stop_loss": sl,
+            "take_profit": tp,
         }
+        self.notifier.on_buy(self.config.SYMBOL, price, amount_coin, sl, tp)
         return order
 
     def close_long(self, price: float, reason: str = "signal") -> Optional[dict]:
@@ -101,6 +108,7 @@ class Trader:
             "SELL %s | qty=%.6f | price=%.2f | PnL=%.2f%% | reason=%s",
             self.config.SYMBOL, amount, price, pnl_pct, reason,
         )
+        self.notifier.on_sell(self.config.SYMBOL, price, pnl_pct, reason)
         self.position = None
         return order
 

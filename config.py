@@ -36,6 +36,10 @@ class Config:
     # Polling interval in seconds
     POLL_INTERVAL: int = 60
 
+    # Telegram notifications (optional — leave blank to disable)
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
+
     @property
     def API_KEY(self) -> str:
         return self.BINANCE_API_KEY if self.EXCHANGE == "binance" else self.GATEIO_API_KEY

@@ -13,6 +13,7 @@ import sys
 
 from config import Config
 from trader import Trader
+from notifier import TelegramNotifier
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,12 +56,14 @@ def main():
     logger.info("=" * 50)
 
     trader = Trader(config)
+    notifier = TelegramNotifier(config.TELEGRAM_BOT_TOKEN, config.TELEGRAM_CHAT_ID)
 
     while _running:
         try:
             trader.run_once()
         except Exception as e:
             logger.error("Error during trading cycle: %s", e, exc_info=True)
+            notifier.on_error(str(e))
 
         if _running:
             logger.debug("Sleeping %d seconds...", config.POLL_INTERVAL)
