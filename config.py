@@ -34,6 +34,20 @@ class Config:
     EMA_SHORT: int = int(os.getenv("EMA_SHORT", "9"))
     EMA_LONG: int = int(os.getenv("EMA_LONG", "21"))
 
+    # --- Stage 1 filters (ADX + RSI + Volume) ---
+    # ADX: ignore trades when market is ranging (ADX < threshold)
+    ADX_PERIOD: int = int(os.getenv("ADX_PERIOD", "14"))
+    ADX_THRESHOLD: float = float(os.getenv("ADX_THRESHOLD", "20"))
+
+    # RSI: only buy when momentum is confirming
+    RSI_PERIOD: int = int(os.getenv("RSI_PERIOD", "14"))
+    RSI_MIN: float = float(os.getenv("RSI_MIN", "45"))   # buy zone lower bound
+    RSI_MAX: float = float(os.getenv("RSI_MAX", "65"))   # buy zone upper bound (not overbought)
+
+    # Volume: only trade when volume spike confirms the move
+    VOLUME_MA_PERIOD: int = int(os.getenv("VOLUME_MA_PERIOD", "20"))
+    VOLUME_SPIKE_MULT: float = float(os.getenv("VOLUME_SPIKE_MULT", "1.3"))
+
     # Risk management
     STOP_LOSS_PCT: float = float(os.getenv("STOP_LOSS_PCT", "2.0"))
     TAKE_PROFIT_PCT: float = float(os.getenv("TAKE_PROFIT_PCT", "4.0"))

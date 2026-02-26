@@ -32,12 +32,22 @@ def run_backtest(config: Config, limit: int = 500) -> None:
     print(f"Fetching {limit} candles for {config.SYMBOL} {config.TIMEFRAME} from {config.EXCHANGE}...")
     df = fetch_ohlcv(config, limit)
 
-    strategy = EMAStrategy(config.EMA_SHORT, config.EMA_LONG)
+    strategy = EMAStrategy(
+        short_period=config.EMA_SHORT,
+        long_period=config.EMA_LONG,
+        adx_period=config.ADX_PERIOD,
+        adx_threshold=config.ADX_THRESHOLD,
+        rsi_period=config.RSI_PERIOD,
+        rsi_min=config.RSI_MIN,
+        rsi_max=config.RSI_MAX,
+        volume_ma_period=config.VOLUME_MA_PERIOD,
+        volume_spike_mult=config.VOLUME_SPIKE_MULT,
+    )
     trades = []
     position = None
     equity = 100.0  # start with 100 base units for cumulative P&L
 
-    warmup = config.EMA_LONG + 1
+    warmup = strategy.warmup_bars
     for i in range(warmup, len(df)):
         window = df.iloc[: i + 1]
         signal, _ = strategy.analyze(window)
@@ -109,7 +119,9 @@ def _print_report(trades_df: pd.DataFrame, config: Config, final_equity: float) 
 
     print(f"\n{'='*70}")
     print(f"  Backtest Report: {config.SYMBOL} | {config.TIMEFRAME} | "
-          f"EMA{config.EMA_SHORT}/{config.EMA_LONG} | SL{config.STOP_LOSS_PCT}%/TP{config.TAKE_PROFIT_PCT}%")
+          f"EMA{config.EMA_SHORT}/{config.EMA_LONG} | "
+          f"ADX>{config.ADX_THRESHOLD} | RSI[{config.RSI_MIN},{config.RSI_MAX}] | "
+          f"Vol>{config.VOLUME_SPIKE_MULT}x | SL{config.STOP_LOSS_PCT}%/TP{config.TAKE_PROFIT_PCT}%")
     print(f"{'='*70}")
     print(trades_df[["entry_time", "exit_time", "entry_price", "exit_price", "pnl_pct", "exit_reason", "result"]]
           .to_string(index=False))

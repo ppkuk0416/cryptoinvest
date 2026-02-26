@@ -14,13 +14,20 @@ _TESTNET_UNSUPPORTED = {"gateio", "upbit"}
 
 
 class Trader:
-    """Handles exchange interactions and order execution (Binance / Gate.io)."""
+    """Handles exchange interactions and order execution."""
 
     def __init__(self, config: Config):
         self.config = config
         self.strategy = EMAStrategy(
             short_period=config.EMA_SHORT,
             long_period=config.EMA_LONG,
+            adx_period=config.ADX_PERIOD,
+            adx_threshold=config.ADX_THRESHOLD,
+            rsi_period=config.RSI_PERIOD,
+            rsi_min=config.RSI_MIN,
+            rsi_max=config.RSI_MAX,
+            volume_ma_period=config.VOLUME_MA_PERIOD,
+            volume_spike_mult=config.VOLUME_SPIKE_MULT,
         )
         self.exchange = self._init_exchange()
         self.position: Optional[dict] = None  # current open position
@@ -53,7 +60,7 @@ class Trader:
 
     def fetch_ohlcv(self) -> pd.DataFrame:
         """Fetch recent OHLCV candles from the exchange."""
-        limit = self.config.EMA_LONG + 10  # a few extra candles for warm-up
+        limit = self.strategy.warmup_bars + 10
         raw = self.exchange.fetch_ohlcv(
             self.config.SYMBOL, self.config.TIMEFRAME, limit=limit
         )
@@ -144,11 +151,14 @@ class Trader:
 
         signal, info = self.strategy.analyze(df)
         logger.info(
-            "Signal: %s | close=%.4f | EMA%d=%.4f | EMA%d=%.4f | %s",
+            "Signal: %s | close=%.4f | EMA%d=%.4f | EMA%d=%.4f | RSI=%.1f | ADX=%.1f | vol=%.2fx | %s",
             signal.value,
             info.get("close", 0),
             self.config.EMA_SHORT, info.get("ema_short", 0),
             self.config.EMA_LONG, info.get("ema_long", 0),
+            info.get("rsi") or 0,
+            info.get("adx") or 0,
+            info.get("vol_ratio") or 0,
             info.get("reason", ""),
         )
 
